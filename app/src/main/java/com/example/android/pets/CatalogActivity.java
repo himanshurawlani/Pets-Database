@@ -94,6 +94,7 @@ public class CatalogActivity extends AppCompatActivity {
             int breedColumnIndex = cursor.getColumnIndex(PetEntry.COLUMN_PET_BREED);
             int genderColumnIndex = cursor.getColumnIndex(PetEntry.COLUMN_PET_GENDER);
             int weightColumnIndex = cursor.getColumnIndex(PetEntry.COLUMN_PET_WEIGHT);
+
             while(cursor.moveToNext()){
                 int id = cursor.getInt(cursor.getColumnIndex(PetEntry._ID));
                 String name = cursor.getString(nameColumnIndex);

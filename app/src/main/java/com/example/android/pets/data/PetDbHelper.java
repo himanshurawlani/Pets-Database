@@ -4,6 +4,9 @@ import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
+import com.example.android.pets.CatalogActivity;
+import com.example.android.pets.EditorActivity;
+
 import static com.example.android.pets.data.PetContract.PetEntry.SQL_CREATE_ENTRIES;
 
 /**

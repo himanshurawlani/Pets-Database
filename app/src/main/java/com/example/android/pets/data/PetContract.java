@@ -22,13 +22,12 @@ public final class PetContract {
         public static final String COLUMN_PET_GENDER = "gender";
         public static final String COLUMN_PET_WEIGHT = "weight";
 
-        public static final String SQL_CREATE_ENTRIES = "CREATE TABLE "+
-                TABLE_NAME + "( " +
-                _ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "+
-                COLUMN_PET_NAME + " TEXT NOT NULL, "+
-                COLUMN_PET_BREED + " TEXT, "+
-                COLUMN_PET_GENDER + " TEXT NOT NULL, "+
-                COLUMN_PET_WEIGHT + " INTEGER NOT NULL DEFAULT 0);";
+        public static final String SQL_CREATE_ENTRIES = "CREATE TABLE "+ TABLE_NAME + "( "
+                + _ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
+                + COLUMN_PET_NAME + " TEXT NOT NULL, "
+                + COLUMN_PET_BREED + " TEXT, "
+                + COLUMN_PET_GENDER + " TEXT NOT NULL, "
+                + COLUMN_PET_WEIGHT + " INTEGER NOT NULL DEFAULT 0);";
 
         // Gender Constants
         public static final int GENDER_UNKNOWN = 0;
