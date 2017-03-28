@@ -15,12 +15,15 @@
  */
 package com.example.android.pets;
 
+import android.content.ContentUris;
 import android.content.ContentValues;
 import android.database.sqlite.SQLiteDatabase;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.NavUtils;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -37,6 +40,8 @@ import com.example.android.pets.data.PetDbHelper;
  * Allows user to create a new pet or edit an existing one.
  */
 public class EditorActivity extends AppCompatActivity {
+
+    public static final String LOG_TAG = EditorActivity.class.getSimpleName();
 
     /** EditText field to enter the pet's name */
     private EditText mNameEditText;
@@ -121,21 +126,40 @@ public class EditorActivity extends AppCompatActivity {
 
     private void insertPet(){
         // Create or access the database to write
-        mDbHelper = new PetDbHelper(this);
-        SQLiteDatabase db = mDbHelper.getWritableDatabase();
+        //mDbHelper = new PetDbHelper(this);
+        //SQLiteDatabase db = mDbHelper.getWritableDatabase();
 
         // Create a new map of values where column names are keys
         ContentValues values = new ContentValues();
-        values.put(PetEntry.COLUMN_PET_NAME,mNameEditText.getText().toString().trim());
-        values.put(PetEntry.COLUMN_PET_BREED,mBreedEditText.getText().toString().trim());
-        values.put(PetEntry.COLUMN_PET_GENDER,mGenderSpinner.getSelectedItem().toString().trim());
-        values.put(PetEntry.COLUMN_PET_WEIGHT,Integer.parseInt(mWeightEditText.getText().toString().trim()));
 
-        long newRowId = db.insert(PetEntry.TABLE_NAME,null,values);
-        if(newRowId == -1){
+        String name = mNameEditText.getText().toString().trim();
+        if(name.equals(""))
+        {
+            Toast.makeText(this,"Name cannot be blank",Toast.LENGTH_SHORT).show();
+            return;
+        }
+        else
+            values.put(PetEntry.COLUMN_PET_NAME,name);
+
+        values.put(PetEntry.COLUMN_PET_BREED,mBreedEditText.getText().toString().trim());
+        values.put(PetEntry.COLUMN_PET_GENDER,mGender);
+
+        try {
+            values.put(PetEntry.COLUMN_PET_WEIGHT, Integer.parseInt(mWeightEditText.getText().toString().trim()));
+        }catch (Exception e){
+            Log.e(LOG_TAG,"Please specify weight "+e);
+            Toast.makeText(this, "Please Specify a valid Weight",Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        //long newRowId = db.insert(PetEntry.TABLE_NAME,null,values);
+        Uri newRowUri = getContentResolver().insert(PetEntry.CONTENT_URI,values);
+        if(newRowUri == null){
             Toast.makeText(this,"Error inserting in the database.",Toast.LENGTH_SHORT).show();
         }else {
+            long newRowId = ContentUris.parseId(newRowUri);
             Toast.makeText(this,"Pet Row inserted with id : "+newRowId,Toast.LENGTH_SHORT).show();
+            // Close the editor activity on successful insertion
             finish();
         }
     }

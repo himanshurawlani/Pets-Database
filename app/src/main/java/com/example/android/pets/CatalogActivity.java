@@ -15,27 +15,34 @@
  */
 package com.example.android.pets;
 
+import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.ListViewCompat;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.android.pets.data.PetContract.PetEntry;
 import com.example.android.pets.data.PetDbHelper;
 
+import java.util.List;
+
 /**
  * Displays list of pets that were entered and stored in the app.
  */
 public class CatalogActivity extends AppCompatActivity {
 
+    public static final String LOG_TAG = CatalogActivity.class.getSimpleName();
     private PetDbHelper mDbHelper;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,6 +62,12 @@ public class CatalogActivity extends AppCompatActivity {
         // To access our database, we instantiate our subclass of SQLiteOpenHelper
         // and pass the context, which is the current activity.
         mDbHelper = new PetDbHelper(this);
+
+        // Find the ListView which will be populated with the pet data
+        ListView lv = (ListView) findViewById(R.id.list);
+        // Find and set empty view on the ListView, so that it only shows when the list has 0 items.
+        View empty_view = findViewById(R.id.empty_view);
+        lv.setEmptyView(empty_view);
     }
 
     @Override
@@ -68,8 +81,9 @@ public class CatalogActivity extends AppCompatActivity {
      * the pets database.
      */
     private void displayDatabaseInfo() {
+
         // Create and/or open a database to read from it
-        SQLiteDatabase db = mDbHelper.getReadableDatabase();
+        //SQLiteDatabase db = mDbHelper.getReadableDatabase();
 
         // Define a projection that specifies which columns from the database
         // you will actually use after this query.
@@ -77,38 +91,25 @@ public class CatalogActivity extends AppCompatActivity {
         String[] projection = new String[]{};
 
         // Filter results WHERE "selection" = 'selectionArgs'
-        String selection = null;
-        String[] selectionArgs = new String[]{};
+        //String selection = null;
+        //String[] selectionArgs = new String[]{};
 
-        // to get a Cursor that contains all rows from the pets table.
-        Cursor cursor = db.query(PetEntry.TABLE_NAME,projection,selection,selectionArgs,null,null,null);
-        try {
-            // Display the number of rows in the Cursor (which reflects the number of rows in the
-            // pets table in the database).
-            TextView displayView = (TextView) findViewById(R.id.text_view_pet);
-            displayView.setText("Number of rows in pets database table: " + cursor.getCount() + "\n\n");
-            displayView.append(PetEntry._ID + " - " + PetEntry.COLUMN_PET_NAME + " - " + PetEntry.COLUMN_PET_BREED
-            + " - " + PetEntry.COLUMN_PET_GENDER + " - " + PetEntry.COLUMN_PET_WEIGHT + "\n");
+        // Perform a query on the provider using contentResolver
+        Cursor cursor = getContentResolver().query(PetEntry.CONTENT_URI,projection,null,null,null);
 
-            int nameColumnIndex = cursor.getColumnIndex(PetEntry.COLUMN_PET_NAME);
-            int breedColumnIndex = cursor.getColumnIndex(PetEntry.COLUMN_PET_BREED);
-            int genderColumnIndex = cursor.getColumnIndex(PetEntry.COLUMN_PET_GENDER);
-            int weightColumnIndex = cursor.getColumnIndex(PetEntry.COLUMN_PET_WEIGHT);
+        // Display the number of rows in the Cursor (which reflects the number of rows in the
+        // pets table in the database).
 
-            while(cursor.moveToNext()){
-                int id = cursor.getInt(cursor.getColumnIndex(PetEntry._ID));
-                String name = cursor.getString(nameColumnIndex);
-                String breed = cursor.getString(breedColumnIndex);
-                String gender = cursor.getString(genderColumnIndex);
-                int weight = cursor.getInt(weightColumnIndex);
+        // Find ListView to populate
+        ListView lv = (ListView) findViewById(R.id.list);
+        // Setup cursor adapter using cursor from getContentResolver().query()
+        PetCursorAdapter cursorAdapter = new PetCursorAdapter(this,cursor);
+        // Attach cursor adapter to the ListView
+        lv.setAdapter(cursorAdapter);
 
-                displayView.append("\n" + id + " - " + name + " - " + breed + " - " + gender + " - " + weight);
-            }
-        } finally {
-            // Always close the cursor when you're done reading from it. This releases all its
-            // resources and makes it invalid.
-            cursor.close();
-        }
+        // Always close the cursor when you're done reading from it. This releases all its
+        // resources and makes it invalid.
+        //cursor.close();
     }
 
     @Override
@@ -122,7 +123,7 @@ public class CatalogActivity extends AppCompatActivity {
     private void insertPet(){
 
         // Create and/or open a database to write to it
-        SQLiteDatabase db = mDbHelper.getWritableDatabase();
+        //SQLiteDatabase db = mDbHelper.getWritableDatabase();
 
         // Create a new map of values where column names are keys
         ContentValues values = new ContentValues();
@@ -131,7 +132,9 @@ public class CatalogActivity extends AppCompatActivity {
         values.put(PetEntry.COLUMN_PET_GENDER,PetEntry.GENDER_MALE);
         values.put(PetEntry.COLUMN_PET_WEIGHT,7);
 
-        long newRowId = db.insert(PetEntry.TABLE_NAME,null,values);
+        //long newRowId = db.insert(PetEntry.TABLE_NAME,null,values);
+        Uri newRowUri = getContentResolver().insert(PetEntry.CONTENT_URI,values);
+        long newRowId = ContentUris.parseId(newRowUri);
         if(newRowId == -1){
             Toast.makeText(this,"Could not insert dummy data into the database",Toast.LENGTH_SHORT).show();
         }else{
