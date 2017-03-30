@@ -82,6 +82,7 @@ public class PetProvider extends ContentProvider {
 
         // Get readable database
         SQLiteDatabase db = mDbHelper.getReadableDatabase();
+        // This cursor will hold the result of the query
         Cursor cursor;
 
         switch(sUriMatcher.match(uri)) {
@@ -99,6 +100,12 @@ public class PetProvider extends ContentProvider {
             default:
                 throw new IllegalArgumentException("Cannot query unknown URI" + uri);
         }
+
+        // Set notification URI on the Cursor,
+        // so we know what content URI the Cursor was created for.
+        // If the data at this URI changes, then we know we need to update the Cursor.
+        cursor.setNotificationUri(getContext().getContentResolver(),uri);
+
         return cursor;
     }
 
@@ -173,6 +180,8 @@ public class PetProvider extends ContentProvider {
             return null;
         }
 
+        // Notify all listeners that the data has changed for the pet content URI
+        getContext().getContentResolver().notifyChange(uri,null);
         // Once we know the ID of the new row in the table,
         // return the new URI with the ID appended to the end of it
         return ContentUris.withAppendedId(uri,id);
@@ -190,25 +199,31 @@ public class PetProvider extends ContentProvider {
     @Override
     public int delete(@NonNull Uri uri, @Nullable String selection, @Nullable String[] selectionArgs)
     {
+        SQLiteDatabase db = mDbHelper.getWritableDatabase();
+        // Track the number of rows that were deleted
+        int rowsDeleted;
         switch (sUriMatcher.match(uri))
         {
             case PETS:
                 // Delete all rows that match the selection and selection args
-                return deletePets(selection,selectionArgs);
+                rowsDeleted = db.delete(PetContract.PetEntry.TABLE_NAME,selection,selectionArgs);
+                break;
             case PET_ID:
                 // Delete a single row given by the ID in the URI
                 selection = PetContract.PetEntry._ID + "=?";
                 selectionArgs = new String[]{String.valueOf(ContentUris.parseId(uri))};
-                return deletePets(selection,selectionArgs);
+                rowsDeleted = db.delete(PetContract.PetEntry.TABLE_NAME,selection,selectionArgs);
+                break;
             default:
                 throw new IllegalArgumentException("Cannot delete, unknown URI" + uri);
-
         }
-    }
 
-    private int deletePets(String selection, String[] selectionArgs) {
-        SQLiteDatabase db = mDbHelper.getWritableDatabase();
-        return db.delete(PetContract.PetEntry.TABLE_NAME,selection,selectionArgs);
+        // If 1 or more rows were deleted, then notify all listeners that the data at the
+        // given URI has changed
+        if(rowsDeleted != 0)
+            getContext().getContentResolver().notifyChange(uri,null);
+
+        return rowsDeleted;
     }
 
     /**
@@ -221,14 +236,14 @@ public class PetProvider extends ContentProvider {
         switch (sUriMatcher.match(uri))
         {
             case PETS:
-                return updatePets(contentValues,selection,selectionArgs);
+                return updatePets(uri,contentValues,selection,selectionArgs);
             case PET_ID:
                 // For the PET_ID code, extract out the ID from the URI,
                 // so we know which row to update. Selection will be "_id=?" and selection
                 // arguments will be a String array containing the actual ID.
                 selection = PetContract.PetEntry._ID + "=?";
                 selectionArgs = new String[] {String.valueOf(ContentUris.parseId(uri))};
-                return updatePets(contentValues,selection,selectionArgs);
+                return updatePets(uri,contentValues,selection,selectionArgs);
             default:
                 throw new IllegalArgumentException("Cannot update, unknown URI" + uri);
         }
@@ -239,7 +254,7 @@ public class PetProvider extends ContentProvider {
      * specified in the selection and selection arguments (which could be 0 or 1 or more pets).
      * Return the number of rows that were successfully updated.
      */
-    private int updatePets(ContentValues contentValues, String selection, String[] selectionArgs) {
+    private int updatePets(Uri uri,ContentValues contentValues, String selection, String[] selectionArgs) {
         // If the {@link PetEntry#COLUMN_PET_NAME} key is present,
         // check that the name value is not null.
         if (contentValues.containsKey(PetContract.PetEntry.COLUMN_PET_NAME)) {
@@ -279,7 +294,10 @@ public class PetProvider extends ContentProvider {
         SQLiteDatabase database = mDbHelper.getWritableDatabase();
 
         // Returns the number of database rows affected by the update statement
-        return database.update(PetContract.PetEntry.TABLE_NAME, contentValues, selection, selectionArgs);
+        int count = database.update(PetContract.PetEntry.TABLE_NAME, contentValues, selection, selectionArgs);
+        if(count != 0)
+            getContext().getContentResolver().notifyChange(uri,null);
+        return count;
     }
 
 }
